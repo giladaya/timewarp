@@ -1,19 +1,36 @@
-<div id="container">
+<!DOCTYPE html>
+<html lang="en">
 
-  <header>
-    <h1>Video Timewarp Demo</h1>
-  </header>
+<head>
+  <meta charset="UTF-8">
+  <title>CodePen - Video timewarp</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="./style.css">
 
-  <main>
-    <video playsinline autoplay></video>
+</head>
 
-    <canvas></canvas>
-  </main>
-  <footer>
-    <button id="btnDownload" class="secondary icon">💾</button>
-    <button id="btnGoVertical">Go ↧</button>
-    <button id="btnGoHorizontal">Go ↦</button>
-    <button id="btnFlip" class="secondary">↺</button>
-  </footer>
-</div>
-<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+<body>
+  <div id="container">
+
+    <header>
+      <h1>Video Timewarp Demo</h1>
+    </header>
+
+    <main>
+      <video playsinline autoplay></video>
+
+      <canvas></canvas>
+    </main>
+    <footer>
+      <button id="btnDownload" class="secondary icon">💾</button>
+      <button id="btnGoVertical">Go ↧</button>
+      <button id="btnGoHorizontal">Go ↦</button>
+      <button id="btnFlip" class="secondary">↺</button>
+    </footer>
+  </div>
+  <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+  <script src="./script.js"></script>
+
+</body>
+
+</html>
