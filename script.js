@@ -15,6 +15,9 @@ const START_DELAY = 3000;
 // Overlay color
 const OVERLAY_COLOR = "#0F0";
 
+// Whether to use selfie cam by default
+const DEFAULT_IS_SELFIE = true;
+
 // ---------
 // Functions
 // ---------
@@ -212,7 +215,7 @@ function initVideo(isSelfie) {
 }
 
 function initFlipButton(btnFlip) {
-  let isSelfie = true;
+  let isSelfie = DEFAULT_IS_SELFIE;
   function handleCamFlip() {
     isSelfie = !isSelfie;
     initVideo(isSelfie);
@@ -305,4 +308,4 @@ $btnDownload.onclick = handleDownload;
 const $btnFlip = document.querySelector("#btnFlip");
 initFlipButton($btnFlip);
 
-initVideo();
+initVideo(DEFAULT_IS_SELFIE);
