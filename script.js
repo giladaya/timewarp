@@ -15,147 +15,169 @@ const START_DELAY = 3000;
 // Overlay color
 const OVERLAY_COLOR = "#0F0";
 
-// ------------------
-// Utility variables
-// ------------------
-// track position of scan line
-let scanPos = 0;
-// Delay between line caprtures
-let loopDelay = 100;
-let timer = null;
-let countdownRemaining = 3;
-let isSelfie = true;
-let isVertical = true;
+// ---------
+// Functions
+// ---------
 
-function showDownload() {
-  btnDownload.style.visibility = "visible";
-}
+function Timer() {
+  this.timer = null;
 
-function hideDownload() {
-  btnDownload.style.visibility = "hidden";
-}
-
-function scanStepV() {
-  scanPos += BAND_WIDTH;
-  const ctx = canvas.getContext("2d");
-
-  ctx.fillStyle = OVERLAY_COLOR;
-  ctx.fillRect(0, scanPos + BAND_WIDTH, canvas.width, BAND_WIDTH);
-
-  // ctx.globalAlpha = 0.5;
-  // ctx.drawImage(
-  //   video,
-  //   0,
-  //   scanPos - BAND_WIDTH,
-  //   video.videoWidth,
-  //   BAND_WIDTH * 2,
-  //   0,
-  //   scanPos - BAND_WIDTH,
-  //   canvas.width,
-  //   BAND_WIDTH * 2
-  // );
-  ctx.globalAlpha = 1;
-  ctx.drawImage(
-    video,
-    0,
-    scanPos,
-    video.videoWidth,
-    BAND_WIDTH,
-    0,
-    scanPos,
-    canvas.width,
-    BAND_WIDTH
-  );
-}
-function scanStepH() {
-  scanPos += BAND_WIDTH;
-  const ctx = canvas.getContext("2d");
-
-  ctx.fillStyle = OVERLAY_COLOR;
-  ctx.fillRect(scanPos + BAND_WIDTH, 0, BAND_WIDTH, canvas.height);
-  ctx.drawImage(
-    video,
-    scanPos,
-    0,
-    BAND_WIDTH,
-    video.videoHeight,
-    scanPos,
-    0,
-    BAND_WIDTH,
-    canvas.height
-  );
-}
-
-function scanLoopVertical() {
-  scanStepV();
-
-  if (scanPos < video.videoHeight) {
-    timer = setTimeout(scanLoopVertical, loopDelay);
-  } else {
-    showDownload();
+  const set = (timer) => {
+    this.timer = timer;
   }
-}
-function scanLoopHorizontal() {
-  scanStepH();
 
-  if (scanPos < video.videoWidth) {
-    timer = setTimeout(scanLoopHorizontal, loopDelay);
-  } else {
-    showDownload();
+  const clear = () => {
+    clearTimeout(this.timer);
+  }
+
+  return {
+    set,
+    clear,
   }
 }
 
-function startScan() {
-  hideDownload();
+function doScanH({ video, canvas, scanDuration, bandWidth, overlayColor, setTimer, onDone }) {
+  let scanPos = 0;
+  const loopDelay = scanDuration / (video.videoHeight / bandWidth);
+
+  function scanStep() {
+    scanPos += bandWidth;
+    const ctx = canvas.getContext("2d");
+  
+    ctx.fillStyle = overlayColor;
+    ctx.fillRect(scanPos + bandWidth, 0, bandWidth, canvas.height);
+    ctx.drawImage(
+      video,
+      scanPos,
+      0,
+      bandWidth,
+      video.videoHeight,
+      scanPos,
+      0,
+      bandWidth,
+      canvas.height
+    );
+  }
+
+  function scanLoop() {
+    scanStep();
+
+    if (scanPos < video.videoWidth) {
+      setTimer(setTimeout(scanLoop, loopDelay));
+    } else {
+      onDone();
+    }
+  }
+
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
 
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  scanPos = 0;
-  clearTimeout(timer);
-
-  if (isVertical) {
-    loopDelay = SCAN_DURATION / (video.videoHeight / BAND_WIDTH);
-    scanLoopVertical();
-  } else {
-    loopDelay = SCAN_DURATION / (video.videoWidth / BAND_WIDTH);
-    scanLoopHorizontal();
-  }
+  scanLoop();
 }
 
-function countdownLoop() {
+function doScanV({ video, canvas, scanDuration, bandWidth, overlayColor, setTimer, onDone }) {
+  let scanPos = 0;
+  const loopDelay = scanDuration / (video.videoHeight / bandWidth);
+
+  function scanStep() {
+    scanPos += bandWidth;
+    const ctx = canvas.getContext("2d");
+
+    ctx.fillStyle = overlayColor;
+    ctx.fillRect(0, scanPos + bandWidth, canvas.width, bandWidth);
+    ctx.drawImage(
+      video,
+      0,
+      scanPos,
+      video.videoWidth,
+      bandWidth,
+      0,
+      scanPos,
+      canvas.width,
+      bandWidth
+    );
+  }
+
+  function scanLoop() {
+    scanStep();
+
+    if (scanPos < video.videoHeight) {
+      setTimer(setTimeout(scanLoop, loopDelay));
+    } else {
+      onDone();
+    }
+  }
+
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = OVERLAY_COLOR;
-  ctx.fillText(countdownRemaining, 50, 50);
 
-  if (countdownRemaining > 0) {
-    countdownRemaining--;
-    timer = setTimeout(countdownLoop, 1000);
-  } else {
-    startScan();
-  }
+  scanLoop();
 }
-function startCountdown() {
-  resetCanvas();
-  clearTimeout(timer);
+
+function doCountdown({
+  delay,
+  canvas,
+  setTimer,
+  onDone,
+  overlayColor,
+}) {
+  let countdownRemaining = Math.floor(delay / 1000);
+
+  function countdownLoop() {
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = overlayColor;
+    ctx.fillText(countdownRemaining, 50, 50);
+
+    if (countdownRemaining > 0) {
+      countdownRemaining--;
+      setTimer(setTimeout(countdownLoop, 1000));
+    } else {
+      onDone()();
+    }
+  }
 
   const ctx = canvas.getContext("2d");
   ctx.textBaseline = "top";
   ctx.font = "10em serif";
-  countdownRemaining = Math.floor(START_DELAY / 1000);
+
   countdownLoop();
+}
+
+function resetCanvas(canvas, video) {
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+// ------------
+// UI functions
+// ------------
+// These directly acecss UI global vars
+
+function showDownload() {
+  $btnDownload.style.visibility = "visible";
+}
+
+function hideDownload() {
+  $btnDownload.style.visibility = "hidden";
 }
 
 function handleCamFlip() {
   isSelfie = !isSelfie;
-  initVideo();
+  initVideo(isSelfie);
 }
 
 function handleDownload() {
-  const image = canvas
+  const image = $canvas
     .toDataURL("image/jpeg", 0.95)
     .replace("image/png", "image/octet-stream");
   const link = document.createElement("a");
@@ -165,8 +187,8 @@ function handleDownload() {
 }
 
 function handleGumSuccess(stream) {
-  video.srcObject = stream;
-  resetCanvas();
+  $video.srcObject = stream;
+  resetCanvas($canvas, $video);
 }
 
 function handleGumError(error) {
@@ -177,7 +199,7 @@ function handleGumError(error) {
   );
 }
 
-function initVideo() {
+function initVideo(isSelfie) {
   const constraints = {
     audio: false,
     video: { facingMode: isSelfie ? "user" : "environment" }
@@ -189,46 +211,20 @@ function initVideo() {
     .catch(handleGumError);
 }
 
-function resetCanvas() {
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
+function initFlipButton(btnFlip) {
+  let isSelfie = true;
+  function handleCamFlip() {
+    isSelfie = !isSelfie;
+    initVideo(isSelfie);
+  }
 
-  const ctx = canvas.getContext("2d");
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-}
-
-// -----
-// Init
-// -----
-// Put variables in global scope to make them available to the browser console.
-const video = document.querySelector("video");
-const canvas = document.querySelector("canvas");
-canvas.width = 480;
-canvas.height = 360;
-
-const btnGoVertical = document.querySelector("#btnGoVertical");
-btnGoVertical.onclick = () => {
-  isVertical = true;
-  startCountdown();
-};
-
-const btnGoHorizontal = document.querySelector("#btnGoHorizontal");
-btnGoHorizontal.onclick = () => {
-  isVertical = false;
-  startCountdown();
-};
-
-const btnDownload = document.querySelector("#btnDownload");
-btnDownload.onclick = handleDownload;
-
-navigator.mediaDevices
+  navigator.mediaDevices
   .enumerateDevices()
   .then(function (devices) {
     const allVideoDevices = devices.filter(
       (device) => device.kind === "videoinput"
     );
     if (allVideoDevices.length > 1) {
-      const btnFlip = document.querySelector("#btnFlip");
       btnFlip.onclick = handleCamFlip;
       btnFlip.style.visibility = "visible";
     }
@@ -236,5 +232,77 @@ navigator.mediaDevices
   .catch(function (err) {
     console.log(err.name + ": " + err.message);
   });
+}
+
+// -------
+// Init UI
+// -------
+const timerManager = new Timer();
+const $video = document.querySelector("video");
+const $canvas = document.querySelector("canvas");
+$canvas.width = 480;
+$canvas.height = 360;
+
+const $btnGoVertical = document.querySelector("#btnGoVertical");
+$btnGoVertical.onclick = () => {
+  resetCanvas($canvas, $video);
+  timerManager.clear();
+
+  doCountdown({
+    delay: START_DELAY,
+    canvas: $canvas,
+    setTimer: timerManager.set,
+    overlayColor: OVERLAY_COLOR,
+    onDone: () => {
+      resetCanvas($canvas, $video);
+      timerManager.clear();
+      hideDownload();
+
+      doScanV({ 
+        video: $video, 
+        canvas: $canvas, 
+        scanDuration: SCAN_DURATION, 
+        bandWidth: BAND_WIDTH, 
+        overlayColor: OVERLAY_COLOR, 
+        setTimer: timerManager.set, 
+        onDone: showDownload 
+      })
+    },
+  })
+};
+
+const $btnGoHorizontal = document.querySelector("#btnGoHorizontal");
+$btnGoHorizontal.onclick = () => {
+  resetCanvas($canvas, $video);
+  timerManager.clear();
+
+  doCountdown({
+    delay: START_DELAY,
+    canvas: $canvas,
+    setTimer: timerManager.set,
+    overlayColor: OVERLAY_COLOR,
+    onDone: () => {
+      resetCanvas($canvas, $video);
+      timerManager.clear();
+      hideDownload();
+
+      doScanH({ 
+        video: $video, 
+        canvas: $canvas, 
+        scanDuration: SCAN_DURATION, 
+        bandWidth: BAND_WIDTH, 
+        overlayColor: OVERLAY_COLOR, 
+        setTimer: timerManager.set, 
+        onDone: showDownload 
+      })
+    },
+  })
+};
+
+const $btnDownload = document.querySelector("#btnDownload");
+$btnDownload.onclick = handleDownload;
+
+const $btnFlip = document.querySelector("#btnFlip");
+initFlipButton($btnFlip);
 
 initVideo();
